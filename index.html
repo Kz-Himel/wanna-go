@@ -1,11 +1,805 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Will You Go On A Date With Me?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,500;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --velvet-dark: #12050d;
+    --velvet: #1d0a14;
+    --velvet-light: #341225;
+    --wine-glow: #7a1c43;
+    --rose-accent: #e8a5b8;
+    --rose-soft: #f7d6e0;
+    --gold: #e0a96d;
+    --gold-bright: #f3ce98;
+    --champagne: #fff8f0;
+    --text-muted: rgba(255, 248, 240, 0.7);
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(224, 169, 109, 0.25);
+  }
+
+  * { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+  }
+
+  html, body {
+    margin: 0; padding: 0; 
+    width: 100%;
+    min-height: 100dvh;
+    background: var(--velvet-dark);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--champagne);
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at 50% 20%, #2e0d21 0%, var(--velvet-dark) 80%);
+  }
+
+  /* Mobile App Shell */
+  .app-shell {
+    width: 100%;
+    max-width: 440px;
+    min-height: 100dvh;
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Ambient Floating Hearts */
+  .ambient {
+    position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+  }
+  .ambient span {
+    position: absolute;
+    bottom: -40px;
+    color: var(--rose-accent);
+    opacity: 0;
+    animation: floatUpHighQuality linear infinite;
+    filter: drop-shadow(0 0 6px rgba(232, 165, 184, 0.4));
+  }
+  @keyframes floatUpHighQuality {
+    0% { transform: translateY(0) translateX(0) scale(0.8) rotate(0deg); opacity: 0; }
+    20% { opacity: 0.35; }
+    80% { opacity: 0.25; }
+    100% { transform: translateY(-110vh) translateX(30px) scale(1.1) rotate(45deg); opacity: 0; }
+  }
+
+  /* Topbar & Progress */
+  .topbar {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    padding: 8px 0 16px 0;
+  }
+  .back-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--gold-bright);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 4px; cursor: pointer;
+    padding: 6px 12px; border-radius: 20px;
+    backdrop-filter: blur(8px);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .back-btn:active { transform: scale(0.92); }
+  
+  .progress-track {
+    flex: 1; display: flex; gap: 4px;
+  }
+  .progress-dot {
+    height: 4px; flex: 1; border-radius: 4px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden; position: relative;
+    transition: background 0.4s ease;
+  }
+  .progress-dot.filled {
+    background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+    box-shadow: 0 0 8px rgba(224, 169, 109, 0.5);
+  }
+  .progress-dot.current {
+    background: rgba(224, 169, 109, 0.4);
+    animation: pulseGlow 1.6s infinite alternate;
+  }
+  @keyframes pulseGlow {
+    0% { box-shadow: 0 0 2px rgba(224, 169, 109, 0.3); }
+    100% { box-shadow: 0 0 8px rgba(243, 206, 152, 0.8); }
+  }
+
+  /* Stage Layout */
+  .stage {
+    position: relative; z-index: 2;
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    padding: 8px 0 20px 0;
+    animation: cardIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .eyebrow {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--gold); font-weight: 700; margin: 0 0 8px 0;
+    text-shadow: 0 0 10px rgba(224, 169, 109, 0.3);
+  }
+  h1.question {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600; font-style: italic;
+    font-size: clamp(22px, 6.5vw, 28px); line-height: 1.25; margin: 0 0 20px 0;
+    color: var(--champagne);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  }
+
+  /* Option Cards */
+  .options { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .opt-card {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-size: clamp(14px, 4.2vw, 16px); font-weight: 600; color: var(--champagne);
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    width: 100%;
+  }
+  .opt-card .emoji { font-size: 22px; flex-shrink: 0; }
+  .opt-card:active { transform: scale(0.97); }
+  .opt-card.selected {
+    border-color: var(--gold-bright);
+    background: linear-gradient(135deg, rgba(224, 169, 109, 0.28), rgba(122, 28, 67, 0.3));
+    box-shadow: 0 0 15px rgba(224, 169, 109, 0.25);
+  }
+
+  /* Envelope & Letter */
+  .intro-wrap {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; z-index: 2; width: 100%; padding: 10px 0;
+  }
+  .envelope {
+    width: clamp(200px, 65vw, 240px); 
+    height: clamp(130px, 42vw, 160px); 
+    position: relative; cursor: pointer;
+    margin-bottom: 20px; perspective: 1000px;
+  }
+  .envelope .body {
+    position: absolute; inset: 0;
+    background: linear-gradient(145deg, var(--velvet-light), var(--wine-glow));
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    border: 1px solid rgba(224, 169, 109, 0.3);
+  }
+  .envelope .flap {
+    position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+    background: linear-gradient(160deg, var(--wine-glow), var(--velvet-dark));
+    clip-path: polygon(0 0, 100% 0, 50% 88%);
+    transform-origin: top center;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 3;
+    border-radius: 12px 12px 0 0;
+  }
+  .envelope.open .flap { transform: rotateX(180deg); }
+  
+  .seal {
+    position: absolute; top: 35%; left: 50%; transform: translateX(-50%);
+    width: 42px; height: 42px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--gold-bright), var(--gold) 80%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: var(--velvet-dark); z-index: 4;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.5);
+    animation: sealPulse 2s ease-in-out infinite;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .envelope.open .seal { opacity: 0; transform: translateX(-50%) scale(0.5); }
+  @keyframes sealPulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.08); }
+  }
+
+  .tap-hint {
+    font-size: 11px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;
+    transition: opacity 0.3s ease; text-align: center;
+  }
+
+  .letter-card {
+    background: linear-gradient(180deg, #fffcf7 0%, var(--champagne) 100%);
+    color: var(--velvet-dark);
+    border-radius: 16px; padding: 22px 20px;
+    width: 100%; max-width: 360px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(224, 169, 109, 0.4);
+    font-family: 'Cormorant Garamond', serif;
+    display: none; opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .letter-card.show { display: block; opacity: 1; transform: translateY(0) scale(1); }
+  .letter-card p { font-size: clamp(16px, 4.5vw, 18px); line-height: 1.5; margin: 0 0 12px 0; }
+  .letter-card .signoff { font-style: italic; font-size: clamp(18px, 5vw, 20px); font-weight: 700; margin-top: 14px; color: var(--wine-glow); }
+
+  .yesno-row {
+    display: flex; gap: 10px; margin-top: 20px; width: 100%; max-width: 360px;
+    display: none; opacity: 0;
+    transition: all 0.5s ease 0.2s;
+  }
+  .yesno-row.show { display: flex; opacity: 1; }
+  
+  .btn-primary, .btn-secondary {
+    flex: 1; border: none; border-radius: 14px; padding: 12px 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 14px;
+    cursor: pointer; min-height: 48px; transition: all 0.25s ease;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    color: var(--velvet-dark);
+    box-shadow: 0 6px 20px rgba(224, 169, 109, 0.3);
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.06);
+    color: var(--champagne);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+  }
+  .btn-primary:active, .btn-secondary:active { transform: scale(0.95); }
+
+  /* Final Summary Screen */
+  .final-wrap { text-align: center; }
+  .final-title {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 700;
+    font-size: clamp(24px, 7vw, 30px); margin: 6px 0 4px 0; color: var(--gold-bright);
+  }
+  .final-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .summary-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 14px 16px; text-align: left; margin-bottom: 18px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    width: 100%;
+  }
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: center; padding: 7px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 13.5px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row .label { color: var(--text-muted); }
+  .summary-row .value { font-weight: 700; color: var(--champagne); text-align: right; }
+
+  .final-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    color: var(--velvet-dark); border: none; border-radius: 14px; padding: 14px;
+    font-weight: 700; font-size: 15px; cursor: pointer; min-height: 48px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    box-shadow: 0 8px 20px rgba(224, 169, 109, 0.3);
+  }
+  .btn-outline {
+    background: transparent; border: 1.5px solid var(--gold); color: var(--gold-bright);
+    border-radius: 14px; padding: 13px; font-weight: 700; font-size: 14px;
+    cursor: pointer; min-height: 48px; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .btn-gold:active, .btn-outline:active { transform: scale(0.96); }
+
+  /* Petals falling effect */
+  .petal {
+    position: absolute; top: -30px; font-size: 16px;
+    opacity: 0.9; animation: fall linear forwards; z-index: 10;
+    filter: drop-shadow(0 0 6px rgba(232, 165, 184, 0.5));
+  }
+  @keyframes fall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+    100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* Declined Screen */
+  .declined-wrap {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 0 10px;
+  }
+  .declined-wrap p { font-size: 16px; color: var(--champagne); margin-bottom: 20px; line-height: 1.5; font-family: 'Cormorant Garamond', serif; }
+</style>
 </head>
 <body>
-    
+
+<div class="app-shell" id="appShell">
+  <div class="ambient" id="ambient"></div>
+  <div id="topbarSlot"></div>
+  <div id="stageSlot"></div>
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+const CONFIG = {
+  generatedFor: "My Beautiful Wife ❤️",
+  whatsappNumber: "+8801307161360"
+};
+
+/* ============ LABELS ============ */
+const LABELS = {
+  dateType: { lunch: "Lunch Only 🍽️", walk: "Walk Only 🚶", both: "Lunch + Walk ❤️" },
+  destination: { tajhat: "Tajhat Palace 🌿", bazar: "Bazar 🛍️", zoo: "Zoo 🦁" },
+  ride: { bike: "Bike 🏍", auto: "Auto 🛺", rickshaw: "Rickshaw 🚲" },
+  flower: { rose: "Red Rose 🌹", tulip: "Tulip 🌷", sunflower: "Sunflower 🌻", daisy: "Daisy 🌼" },
+  foodCategory: { deshi: "Local Food 🇧🇩", bideshi: "International 🌍" },
+  foodChoice: { biriyani: "Kacchi Biriyani", kalabhuna: "Kala Bhuna", fuchka: "Fuchka", pizza: "Pizza", burger: "Burger", platter: "Platter" },
+  dessertChoice: { icecream: "Ice Cream 🍦", cake: "Cake 🍰", drinks: "Drinks 🥤" },
+  memories: { yes: "Yes, let's talk ❤️", maybe: "Maybe 🙂", new: "Let's make new memories 🤭" },
+  pictures: { yes: "Yes! Millions of photos 📸", a_few: "Just a few sweet pics 🤳", candid: "Only candid moments ✨" },
+  surprise: { yes: "Yes, surprise me 🎁", secret: "Keep it secret 🙈" },
+  time: { morning: "Morning", afternoon: "Afternoon", evening: "Evening", night: "Night" },
+  dress: { red: "Red ❤️", black: "Black 🖤", white: "White 🤍", blue: "Blue 💙", surprise: "Surprise Me ✨" }
+};
+
+const MILESTONES = ['dateType','destination','ride','flowersYesNo','food','dessertYesNo','memories','pictures','surprise','time','dress','final'];
+
+let selections = {};
+let historyStack = ['intro'];
+let envelopeOpened = false;
+
+const topbarSlot = document.getElementById('topbarSlot');
+const stageSlot = document.getElementById('stageSlot');
+const ambient = document.getElementById('ambient');
+
+/* Ambient Floating Hearts */
+(function spawnHearts(){
+  const n = 8;
+  for(let i = 0; i < n; i++){
+    const s = document.createElement('span');
+    s.textContent = '♥';
+    s.style.left = (Math.random() * 90 + 5) + '%';
+    s.style.animationDuration = (7 + Math.random() * 7) + 's';
+    s.style.animationDelay = (Math.random() * 6) + 's';
+    s.style.fontSize = (12 + Math.random() * 12) + 'px';
+    ambient.appendChild(s);
+  }
+})();
+
+function current(){ return historyStack[historyStack.length - 1]; }
+
+function goTo(id){ historyStack.push(id); render(); }
+function goBack(){
+  if(historyStack.length > 1){
+    historyStack.pop();
+    render();
+  }
+}
+
+function nextStepId(id){
+  switch(id){
+    case 'dateType': return 'destination';
+    case 'destination': return 'ride';
+    case 'ride': return 'flowersYesNo';
+    case 'flowersYesNo': return selections.wantsFlowers ? 'flowerChoice' : 'food';
+    case 'flowerChoice': return 'food';
+    case 'food': return 'foodChoice';
+    case 'foodChoice': return 'dessertYesNo';
+    case 'dessertYesNo': return selections.wantsDessert ? 'dessertChoice' : 'memories';
+    case 'dessertChoice': return 'memories';
+    case 'memories': return 'pictures';
+    case 'pictures': return 'surprise';
+    case 'surprise': return 'time';
+    case 'time': return 'dress';
+    case 'dress': return 'final';
+    default: return 'final';
+  }
+}
+
+function milestoneIndex(id){
+  const map = { flowerChoice:'flowersYesNo', foodChoice:'food', dessertChoice:'dessertYesNo' };
+  const mapped = map[id] || id;
+  const idx = MILESTONES.indexOf(mapped);
+  return idx === -1 ? 0 : idx;
+}
+
+function selectOption(key, value, advanceFrom){
+  selections[key] = value;
+  render();
+  setTimeout(()=>{ goTo(nextStepId(advanceFrom)); }, 280);
+}
+
+/* ---------- Rendering ---------- */
+function render(){
+  const id = current();
+
+  if(id === 'intro' || id === 'declined'){
+    topbarSlot.innerHTML = '';
+  } else {
+    const mi = milestoneIndex(id);
+    let dots = '';
+    for(let i = 0; i < MILESTONES.length; i++){
+      let cls = 'progress-dot';
+      if(i < mi) cls += ' filled';
+      else if(i === mi) cls += ' filled current';
+      dots += `<div class="${cls}"></div>`;
+    }
+    topbarSlot.innerHTML = `
+      <div class="topbar">
+        <button class="back-btn" onclick="goBack()">‹ Back</button>
+        <div class="progress-track">${dots}</div>
+      </div>`;
+  }
+
+  stageSlot.innerHTML = '';
+
+  if(id === 'intro') return renderIntro();
+  if(id === 'declined') return renderDeclined();
+  if(id === 'final') return renderFinal();
+
+  const stepConfigs = {
+    dateType: {
+      eyebrow: 'Step 1 · The Plan',
+      question: 'What kind of date sounds best?',
+      key: 'dateType',
+      options: [
+        {v:'lunch', label:'Lunch Only', emoji:'🍽️'},
+        {v:'walk', label:'Walk Only', emoji:'🚶'},
+        {v:'both', label:'Lunch + Walk', emoji:'❤️'}
+      ]
+    },
+    destination: {
+      eyebrow: 'Step 2 · Destination',
+      question: 'Where should we go together?',
+      key: 'destination',
+      options: [
+        {v:'tajhat', label:'Tajhat Palace', emoji:'🌿'},
+        {v:'bazar', label:'Bazar', emoji:'🛍️'},
+        {v:'zoo', label:'Zoo', emoji:'🦁'}
+      ]
+    },
+    ride: {
+      eyebrow: 'Step 3 · Transport',
+      question: 'How do you want to travel?',
+      key: 'ride',
+      options: [
+        {v:'bike', label:'Bike', emoji:'🏍'},
+        {v:'auto', label:'Auto', emoji:'🛺'},
+        {v:'rickshaw', label:'Rickshaw', emoji:'🚲'}
+      ]
+    },
+    flowersYesNo: {
+      eyebrow: 'Step 4 · Flowers',
+      question: 'Would you like some flowers?',
+      key: 'wantsFlowers',
+      options: [
+        {v:true, label:'Yes, please', emoji:'🌸'},
+        {v:false, label:'No, thanks', emoji:'🚫'}
+      ]
+    },
+    flowerChoice: {
+      eyebrow: 'Step 4 · Flowers',
+      question: 'Pick your absolute favorite',
+      key: 'flower',
+      options: [
+        {v:'rose', label:'Red Rose', emoji:'🌹'},
+        {v:'tulip', label:'Tulip', emoji:'🌷'},
+        {v:'sunflower', label:'Sunflower', emoji:'🌻'},
+        {v:'daisy', label:'Daisy', emoji:'🌼'}
+      ]
+    },
+    food: {
+      eyebrow: 'Step 5 · Cuisine',
+      question: 'What type of food are you craving?',
+      key: 'foodCategory',
+      options: [
+        {v:'deshi', label:'Local Delights', emoji:'🇧🇩'},
+        {v:'bideshi', label:'International Flavors', emoji:'🌍'}
+      ]
+    },
+    foodChoice: {
+      eyebrow: 'Step 5 · Cuisine',
+      question: 'Choose your main dish',
+      key: 'foodChoice',
+      options: selections.foodCategory === 'bideshi'
+        ? [{v:'pizza', label:'Pizza', emoji:'🍕'}, {v:'burger', label:'Burger', emoji:'🍔'}, {v:'platter', label:'Platter', emoji:'🍱'}]
+        : [{v:'biriyani', label:'Kacchi Biriyani', emoji:'🍛'}, {v:'kalabhuna', label:'Kala Bhuna', emoji:'🍖'}, {v:'fuchka', label:'Fuchka', emoji:'🥟'}]
+    },
+    dessertYesNo: {
+      eyebrow: 'Step 6 · Dessert',
+      question: 'Should we get something sweet?',
+      key: 'wantsDessert',
+      options: [
+        {v:true, label:'Yes, absolutely', emoji:'🍰'},
+        {v:false, label:'I am good', emoji:'🚫'}
+      ]
+    },
+    dessertChoice: {
+      eyebrow: 'Step 6 · Dessert',
+      question: 'What sounds sweetest?',
+      key: 'dessertChoice',
+      options: [
+        {v:'icecream', label:'Ice Cream', emoji:'🍦'},
+        {v:'cake', label:'Cake', emoji:'🍰'},
+        {v:'drinks', label:'Drinks', emoji:'🥤'}
+      ]
+    },
+    memories: {
+      eyebrow: 'Step 7 · Memories',
+      question: "Want to spend time talking about our memories?",
+      key: 'memories',
+      options: [
+        {v:'yes', label:"Yes, let's talk", emoji:'❤️'},
+        {v:'maybe', label:'Maybe', emoji:'🙂'},
+        {v:'new', label:"Let's make new ones", emoji:'🤭'}
+      ]
+    },
+    pictures: {
+      eyebrow: 'Step 8 · Photography',
+      question: 'Do you want to take pictures with me?',
+      key: 'pictures',
+      options: [
+        {v:'yes', label:'Yes! Millions of photos', emoji:'📸'},
+        {v:'a_few', label:'Just a few sweet pics', emoji:'🤳'},
+        {v:'candid', label:'Only candid moments', emoji:'✨'}
+      ]
+    },
+    surprise: {
+      eyebrow: 'Step 9 · Surprise',
+      question: 'Would you like a surprise gift?',
+      key: 'surprise',
+      options: [
+        {v:'yes', label:'Yes, surprise me', emoji:'🎁'},
+        {v:'secret', label:'Keep it secret', emoji:'🙈'}
+      ]
+    },
+    time: {
+      eyebrow: 'Step 10 · Timing',
+      question: 'What time of day is best?',
+      key: 'time',
+      options: [
+        {v:'morning', label:'Morning', emoji:'🌅'},
+        {v:'afternoon', label:'Afternoon', emoji:'☀️'},
+        {v:'evening', label:'Evening', emoji:'🌇'},
+        {v:'night', label:'Night', emoji:'🌙'}
+      ]
+    },
+    dress: {
+      eyebrow: 'Step 11 · Outfit Choice',
+      question: 'What color will you be wearing?',
+      key: 'dress',
+      options: [
+        {v:'red', label:'Red', emoji:'❤️'},
+        {v:'black', label:'Black', emoji:'🖤'},
+        {v:'white', label:'White', emoji:'🤍'},
+        {v:'blue', label:'Blue', emoji:'💙'},
+        {v:'surprise', label:'Surprise Me', emoji:'✨'}
+      ]
+    }
+  };
+
+  const cfg = stepConfigs[id];
+  if(!cfg) return;
+
+  const currentVal = selections[cfg.key];
+  let optsHtml = '';
+  cfg.options.forEach(o => {
+    const isSel = currentVal === o.v;
+    optsHtml += `<div class="opt-card${isSel ? ' selected' : ''}">
+      <span class="emoji">${o.emoji}</span><span>${o.label}</span>
+    </div>`;
+  });
+
+  stageSlot.innerHTML = `
+    <div class="stage">
+      <div class="eyebrow">${cfg.eyebrow}</div>
+      <h1 class="question">${cfg.question}</h1>
+      <div class="options" id="optionsList">${optsHtml}</div>
+    </div>
+  `;
+
+  const list = document.getElementById('optionsList');
+  Array.from(list.children).forEach((el, i) => {
+    el.onclick = () => selectOption(cfg.key, cfg.options[i].v, id);
+  });
+}
+
+function renderIntro(){
+  stageSlot.innerHTML = `
+    <div class="intro-wrap">
+      <div class="envelope" id="envelope" onclick="openEnvelope()">
+        <div class="flap"></div>
+        <div class="body"></div>
+        <div class="seal">♥</div>
+      </div>
+      <div class="tap-hint" id="tapHint">Tap envelope to open</div>
+
+      <div class="letter-card" id="letterCard">
+        <p>My Love,</p>
+        <p>Every single moment with you is precious. Making beautiful memories with you is my favorite thing in the world.</p>
+        <p>So today, I have a very special question for you...</p>
+        <p class="signoff">Will you go on a date with me? ❤️</p>
+      </div>
+
+      <div class="yesno-row" id="yesNoRow">
+        <button class="btn-secondary" onclick="goTo('declined')">Not Today</button>
+        <button class="btn-primary" onclick="goTo('dateType')">Yes, I'd Love To ❤️</button>
+      </div>
+    </div>
+  `;
+}
+
+function openEnvelope(){
+  if(envelopeOpened) return;
+  envelopeOpened = true;
+  const env = document.getElementById('envelope');
+  const hint = document.getElementById('tapHint');
+  env.classList.add('open');
+  if(hint) hint.style.opacity = '0';
+  
+  setTimeout(() => {
+    const letter = document.getElementById('letterCard');
+    if(letter) letter.classList.add('show');
+  }, 400);
+  
+  setTimeout(() => {
+    const row = document.getElementById('yesNoRow');
+    if(row) row.classList.add('show');
+  }, 800);
+}
+
+function renderDeclined(){
+  stageSlot.innerHTML = `
+    <div class="declined-wrap">
+      <div style="font-size:42px; margin-bottom:14px;">🥺</div>
+      <p>Thik ache... jokhon mon chaibe, tokhon bolo. Amar opekkha thakbe. ❤️</p>
+      <button class="btn-primary" style="width:100%; max-width:260px;" onclick="askAgain()">Wait, let me think again</button>
+    </div>
+  `;
+}
+
+function askAgain(){
+  envelopeOpened = false;
+  historyStack = ['intro'];
+  render();
+}
+
+function renderFinal(){
+  spawnPetals();
+  const rows = buildSummaryRows();
+  let rowsHtml = rows.map(r => `<div class="summary-row"><span class="label">${r.label}</span><span class="value">${r.value}</span></div>`).join('');
+
+  stageSlot.innerHTML = `
+    <div class="stage final-wrap">
+      <div style="font-size:32px; margin-bottom:2px;">💌</div>
+      <div class="final-title">Our Date Plan is Ready</div>
+      <div class="final-sub">Thank you for planning our date, my love ❤️</div>
+      <div class="summary-card">${rowsHtml}</div>
+      <div class="final-actions">
+        <button class="btn-gold" onclick="downloadPDF()">📄 Download PDF</button>
+        <button class="btn-outline" onclick="shareWhatsApp()">💬 Send via WhatsApp</button>
+      </div>
+    </div>
+  `;
+}
+
+function buildSummaryRows(){
+  const rows = [];
+  rows.push({label:'Plan', value: LABELS.dateType[selections.dateType] || '-'});
+  rows.push({label:'Destination', value: LABELS.destination[selections.destination] || '-'});
+  rows.push({label:'Ride', value: LABELS.ride[selections.ride] || '-'});
+  rows.push({label:'Flowers', value: selections.wantsFlowers ? (LABELS.flower[selections.flower] || '-') : 'No'});
+  rows.push({label:'Food Choice', value: LABELS.foodChoice[selections.foodChoice] || '-'});
+  rows.push({label:'Dessert', value: selections.wantsDessert ? (LABELS.dessertChoice[selections.dessertChoice] || '-') : 'No'});
+  rows.push({label:'Memories', value: LABELS.memories[selections.memories] || '-'});
+  rows.push({label:'Photos', value: LABELS.pictures[selections.pictures] || '-'});
+  rows.push({label:'Surprise Gift', value: LABELS.surprise[selections.surprise] || '-'});
+  rows.push({label:'Time of Day', value: LABELS.time[selections.time] || '-'});
+  rows.push({label:'Dress Code', value: LABELS.dress[selections.dress] || '-'});
+  return rows;
+}
+
+function spawnPetals(){
+  const shell = document.getElementById('appShell');
+  for(let i = 0; i < 15; i++){
+    const p = document.createElement('div');
+    p.className = 'petal';
+    p.textContent = ['🌸','🌹','✨','❤️'][i % 4];
+    p.style.left = (Math.random() * 92) + '%';
+    p.style.animationDuration = (3.5 + Math.random() * 2.5) + 's';
+    p.style.animationDelay = (Math.random() * 1.2) + 's';
+    p.style.fontSize = (12 + Math.random() * 10) + 'px';
+    shell.appendChild(p);
+    setTimeout(() => p.remove(), 6000);
+  }
+}
+
+/* PDF Generator */
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a5' });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+
+  const cream = [255, 248, 240];
+  const gold = [224, 169, 109];
+  const wine = [122, 28, 67];
+
+  doc.setFillColor(...cream);
+  doc.rect(0, 0, W, H, 'F');
+
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(1.5);
+  doc.rect(14, 14, W - 28, H - 28);
+  doc.setLineWidth(0.5);
+  doc.rect(18, 18, W - 36, H - 36);
+
+  doc.setFont('times', 'bolditalic');
+  doc.setFontSize(20);
+  doc.setTextColor(...wine);
+  doc.text('Our Perfect Date Plan', W/2, 52, { align: 'center' });
+
+  doc.setFont('times', 'italic');
+  doc.setFontSize(10);
+  doc.setTextColor(...gold);
+  doc.text('~ ' + CONFIG.generatedFor + ' ~', W/2, 68, { align: 'center' });
+
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.8);
+  doc.line(45, 78, W - 45, 78);
+
+  const rows = buildSummaryRows();
+  let y = 100;
+  doc.setFontSize(10);
+  
+  rows.forEach(r => {
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 70, 75);
+    doc.text(r.label + ':', 40, y);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...wine);
+    doc.text(String(r.value), 40, y + 12);
+    y += 28;
+  });
+
+  doc.setDrawColor(...gold);
+  doc.setLineWidth(0.5);
+  doc.line(45, y + 2, W - 45, y + 2);
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 90, 95);
+  doc.text('Created with love • ' + dateStr, W/2, y + 18, { align: 'center' });
+
+  doc.save('Our-Date-Plan.pdf');
+}
+
+function shareWhatsApp(){
+  const rows = buildSummaryRows();
+  let text = 'Our Date Plan ❤️%0A%0A';
+  rows.forEach(r => {
+    text += r.label + ': ' + r.value + '%0A';
+  });
+  const base = CONFIG.whatsappNumber
+    ? `https://wa.me/${CONFIG.whatsappNumber}?text=`
+    : `https://wa.me/?text=`;
+  window.open(base + text, '_blank');
+}
+
+render();
+</script>
 </body>
 </html>
