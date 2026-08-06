@@ -342,18 +342,17 @@ const LABELS = {
   dateType: { lunch: "Lunch Only 🍽️", walk: "Walk Only 🚶", both: "Lunch + Walk ❤️" },
   destination: { tajhat: "Tajhat Palace 🌿", bazar: "Bazar 🛍️", zoo: "Zoo 🦁" },
   ride: { bike: "Bike 🏍", auto: "Auto 🛺", rickshaw: "Rickshaw 🚲" },
-  flower: { rose: "Red Rose 🌹", tulip: "Tulip 🌷", sunflower: "Sunflower 🌻", daisy: "Daisy 🌼" },
+  flower: { red_rose: "Red Rose 🌹", yellow_rose: "Yellow Rose 💛", marigold: "Gada Phool (Marigold) 🌼", krishnachura: "Krishnachura 🌺" },
   foodCategory: { deshi: "Local Food 🇧🇩", bideshi: "International 🌍" },
   foodChoice: { biriyani: "Kacchi Biriyani", kalabhuna: "Kala Bhuna", fuchka: "Fuchka", pizza: "Pizza", burger: "Burger", platter: "Platter" },
   dessertChoice: { icecream: "Ice Cream 🍦", cake: "Cake 🍰", drinks: "Drinks 🥤" },
   memories: { yes: "Yes, let's talk ❤️", maybe: "Maybe 🙂", new: "Let's make new memories 🤭" },
   pictures: { yes: "Yes! Millions of photos 📸", a_few: "Just a few sweet pics 🤳", candid: "Only candid moments ✨" },
-  surprise: { yes: "Yes, surprise me 🎁", secret: "Keep it secret 🙈" },
   time: { morning: "Morning", afternoon: "Afternoon", evening: "Evening", night: "Night" },
   dress: { red: "Red ❤️", black: "Black 🖤", white: "White 🤍", blue: "Blue 💙", surprise: "Surprise Me ✨" }
 };
 
-const MILESTONES = ['dateType','destination','ride','flowersYesNo','food','dessertYesNo','memories','pictures','surprise','time','dress','final'];
+const MILESTONES = ['dateType','destination','ride','flowersYesNo','food','dessertYesNo','memories','pictures','time','dress','final'];
 
 let selections = {};
 let historyStack = ['intro'];
@@ -399,8 +398,7 @@ function nextStepId(id){
     case 'dessertYesNo': return selections.wantsDessert ? 'dessertChoice' : 'memories';
     case 'dessertChoice': return 'memories';
     case 'memories': return 'pictures';
-    case 'pictures': return 'surprise';
-    case 'surprise': return 'time';
+    case 'pictures': return 'time'; /* সরাসরি time-এ যাবে, আটকে থাকবে না */
     case 'time': return 'dress';
     case 'dress': return 'final';
     default: return 'final';
@@ -493,10 +491,10 @@ function render(){
       question: 'Pick your absolute favorite',
       key: 'flower',
       options: [
-        {v:'rose', label:'Red Rose', emoji:'🌹'},
-        {v:'tulip', label:'Tulip', emoji:'🌷'},
-        {v:'sunflower', label:'Sunflower', emoji:'🌻'},
-        {v:'daisy', label:'Daisy', emoji:'🌼'}
+        {v:'red_rose', label:'Red Rose', emoji:'🌹'},
+        {v:'yellow_rose', label:'Yellow Rose', emoji:'💛'},
+        {v:'marigold', label:'Gada Phool', emoji:'🌼'},
+        {v:'krishnachura', label:'Krishnachura', emoji:'🌺'}
       ]
     },
     food: {
@@ -555,17 +553,8 @@ function render(){
         {v:'candid', label:'Only candid moments', emoji:'✨'}
       ]
     },
-    surprise: {
-      eyebrow: 'Step 9 · Surprise',
-      question: 'Would you like a surprise gift?',
-      key: 'surprise',
-      options: [
-        {v:'yes', label:'Yes, surprise me', emoji:'🎁'},
-        {v:'secret', label:'Keep it secret', emoji:'🙈'}
-      ]
-    },
     time: {
-      eyebrow: 'Step 10 · Timing',
+      eyebrow: 'Step 9 · Timing',
       question: 'What time of day is best?',
       key: 'time',
       options: [
@@ -576,7 +565,7 @@ function render(){
       ]
     },
     dress: {
-      eyebrow: 'Step 11 · Outfit Choice',
+      eyebrow: 'Step 10 · Outfit Choice',
       question: 'What color will you be wearing?',
       key: 'dress',
       options: [
@@ -704,7 +693,6 @@ function buildSummaryRows(){
   rows.push({label:'Dessert', value: selections.wantsDessert ? (LABELS.dessertChoice[selections.dessertChoice] || '-') : 'No'});
   rows.push({label:'Memories', value: LABELS.memories[selections.memories] || '-'});
   rows.push({label:'Photos', value: LABELS.pictures[selections.pictures] || '-'});
-  rows.push({label:'Surprise Gift', value: LABELS.surprise[selections.surprise] || '-'});
   rows.push({label:'Time of Day', value: LABELS.time[selections.time] || '-'});
   rows.push({label:'Dress Code', value: LABELS.dress[selections.dress] || '-'});
   return rows;
@@ -789,14 +777,19 @@ function downloadPDF(){
 
 function shareWhatsApp(){
   const rows = buildSummaryRows();
-  let text = 'Our Date Plan ❤️%0A%0A';
+  let text = 'Our Date Plan ❤️\n\n';
   rows.forEach(r => {
-    text += r.label + ': ' + r.value + '%0A';
+    text += r.label + ': ' + r.value + '\n';
   });
-  const base = CONFIG.whatsappNumber
-    ? `https://wa.me/${CONFIG.whatsappNumber}?text=`
-    : `https://wa.me/?text=`;
-  window.open(base + text, '_blank');
+
+  const cleanNumber = CONFIG.whatsappNumber ? CONFIG.whatsappNumber.replace(/[^0-9]/g, '') : '';
+  const encodedText = encodeURIComponent(text);
+  
+  const whatsappUrl = cleanNumber 
+    ? `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${encodedText}`
+    : `https://api.whatsapp.com/send?text=${encodedText}`;
+    
+  window.open(whatsappUrl, '_blank');
 }
 
 render();
